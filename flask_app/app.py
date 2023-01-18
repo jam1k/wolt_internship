@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, make_response
 from delivery_price_calculator import calculate_delivery_fee, check_the_input, datetime_valid
 
 app = Flask(__name__)
@@ -7,10 +7,23 @@ app = Flask(__name__)
 def read_json():
     data = request.json
     if (check_the_input(data) == False):
-        return "Input data is not correct, check the input"
+        
+        response = make_response(
+                jsonify(
+                    {"message": str("CHECK_INPUT"), "severity": "danger"}
+                    ),
+                    400,
+                )
+        return response
     else:
         if datetime_valid(data["time"]) == False:
-            return "Check the timestamp format"
+            response = make_response(
+                jsonify(
+                    {"message": str("CHECK_TIMESTAMP"), "severity": "danger"}
+                    ),
+                    400,
+                )
+            return response
         else:
             response = calculate_delivery_fee(data)
             return jsonify(response)
