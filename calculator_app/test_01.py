@@ -329,3 +329,79 @@ def test_num_surcharge():
     assert type(res["delivery_fee"]) is int
     assert res["delivery_fee"] == 410 #2 euro for 1000m and 210 cents surcharge
     assert response.status_code == 200
+
+
+def test_null_surcharge():
+    # testing surcharge calculated correctly surcharge (if cart_value = 1000, surcharge = 0)
+    data = {
+        "cart_value": 1000, 
+        "delivery_distance": 999, 
+        "number_of_items": 4, 
+        "time": "2021-10-12T13:00:00Z"
+    }
+    response = app.test_client().post(
+        '/read_json',
+        data=json.dumps(data),
+        headers={"Content-Type": "application/json"},
+        )
+    res = json.loads(response.data.decode('utf-8'))
+    assert type(res["delivery_fee"]) is int
+    assert res["delivery_fee"] == 200 #2 euro for 1000m and 0 cents surcharge
+    assert response.status_code == 200
+
+
+def test_fee_max():
+    # delivery fee cannot be more than 15 euro
+    data = {
+        "cart_value": 1000, 
+        "delivery_distance": 999999999999999, 
+        "number_of_items": 4, 
+        "time": "2021-10-12T13:00:00Z"
+    }
+    response = app.test_client().post(
+        '/read_json',
+        data=json.dumps(data),
+        headers={"Content-Type": "application/json"},
+        )
+    res = json.loads(response.data.decode('utf-8'))
+    assert type(res["delivery_fee"]) is int
+    assert res["delivery_fee"] == 1500 #max fee 15 euro
+    assert response.status_code == 200
+
+
+def test_free_delivery():
+    # delivery fee cannot be more than 15 euro
+    data = {
+        "cart_value": 10000, 
+        "delivery_distance": 999999999999999, 
+        "number_of_items": 4, 
+        "time": "2021-10-12T13:00:00Z"
+    }
+    response = app.test_client().post(
+        '/read_json',
+        data=json.dumps(data),
+        headers={"Content-Type": "application/json"},
+        )
+    res = json.loads(response.data.decode('utf-8'))
+    assert type(res["delivery_fee"]) is int
+    assert res["delivery_fee"] == 0 #free delivery
+    assert response.status_code == 200
+
+
+def test_fryday_rush():
+    # during Friday rush hours delivery should be multiplied by 1.2
+    data = {
+        "cart_value": 790, 
+        "delivery_distance": 2235, 
+        "number_of_items": 4, 
+        "time": "2023-01-13T15:01:00Z"
+    }
+    response = app.test_client().post(
+        '/read_json',
+        data=json.dumps(data),
+        headers={"Content-Type": "application/json"},
+        )
+    res = json.loads(response.data.decode('utf-8'))
+    assert type(res["delivery_fee"]) is float
+    assert res["delivery_fee"] == 852 # 710 * 1.2 = 852
+    assert response.status_code == 200
