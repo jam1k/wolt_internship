@@ -2,33 +2,35 @@ from dateutil import parser
 from datetime import time, datetime
 from cerberus import Validator
 
-def datetime_valid(dt_str):
+def datetime_test(field, value, error):
     try:
-        datetime.fromisoformat(dt_str.replace('Z', '+00:00'))
+        datetime.fromisoformat(value.replace('Z', '+00:00'))
     except:
-        return False
-    return True
+        error(field, "Must be a date in ISO format")
     
 def check_the_input(data):
-    #function is used to check the input data
-    schema = {"cart_value": {'type': 'integer', 'required': True}, "delivery_distance": {'type': 'integer', 'required': True}, "number_of_items": {'type': 'integer', 'required': True}, "time": {'type': 'string', 'required': True}}
+    # Function is used to check the input data 
+    # Made an assumption, that cart value, distance and number of items has to be >= 1
+    schema = {
+        "cart_value": {'type': 'integer', 'required': True, 'min': 1}, 
+        "delivery_distance": {'type': 'integer', 'required': True, 'min': 1}, 
+        "number_of_items": {'type': 'integer', 'required': True, 'min': 1}, 
+        "time": {'check_with': datetime_test, 'required': True}
+        }
     v = Validator(schema)
-    return v.validate(data)
+    v.validate(data)
+    return v.errors
 
 def add_surcharge(cart_value: int):
     # If the cart value is less than 10€, a small order surcharge is added to the delivery price. 
     # The surcharge is the difference between the cart value and 10€. 
     # For example if the cart value is 8.90€, the surcharge will be 1.10€.
-    if cart_value < 0:
-        raise ValueError("Check the cart value")
     return max(0, 1000 - cart_value)
 
 def delivery_based_on_distance(distance: int):
     # A delivery fee for the first 1000 meters (=1km) is 2€. 
     # If the delivery distance is longer than that, 1€ is added for every additional 500 meters 
     # that the courier needs to travel before reaching the destination.
-    if (distance < 0):
-        raise ValueError("Distance is a negative integer, check the input")
     base_fee = 200
     if distance <= 1000:
         delivery_fee = 0
@@ -43,8 +45,6 @@ def delivery_based_on_distance(distance: int):
 def delivery_based_on_items(number_of_items: int):
     # If the number of items is five or more, an additional 50 cent surcharge is added for each item above five. 
     # An extra "bulk" fee applies for more than 12 items of 1,20€
-    if number_of_items < 0:
-        raise ValueError("Number of items to be delivered cannot be negative")
     i = 0
     item_fee = 0
     while i <= number_of_items:
@@ -92,5 +92,11 @@ def calculate_delivery_fee(data: dict):
     return out_data
 
 if __name__ == "__main__":
-    data = {"cart_value": "hello", "delivery_distance": 2235, "number_of_items": 4, "time": "2021-10-12T13:00:00Z"}
-    
+    data = {
+        "cart_value": "0", 
+        "delivery_distance": 999, 
+        "number_of_items": 4, 
+        "time": "2021-10-12T13:00:00Z"
+    }
+    check_the_input(data)
+    print(calculate_delivery_fee(data))
