@@ -1,6 +1,19 @@
 from dateutil import parser
-from datetime import time
+from datetime import time, datetime
+from cerberus import Validator
 
+def datetime_valid(dt_str):
+    try:
+        datetime.fromisoformat(dt_str.replace('Z', '+00:00'))
+    except:
+        return False
+    return True
+    
+def check_the_input(data):
+    #function is used to check the input data
+    schema = {"cart_value": {'type': 'integer', 'required': True}, "delivery_distance": {'type': 'integer', 'required': True}, "number_of_items": {'type': 'integer', 'required': True}, "time": {'type': 'string', 'required': True}}
+    v = Validator(schema)
+    return v.validate(data)
 
 def add_surcharge(cart_value: int):
     # If the cart value is less than 10€, a small order surcharge is added to the delivery price. 
@@ -77,3 +90,7 @@ def calculate_delivery_fee(data: dict):
     else:
         out_data['delivery_fee'] = max_delivery_fee
     return out_data
+
+if __name__ == "__main__":
+    data = {"cart_value": "hello", "delivery_distance": 2235, "number_of_items": 4, "time": "2021-10-12T13:00:00Z"}
+    
