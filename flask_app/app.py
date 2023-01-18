@@ -12,7 +12,8 @@ def read_json():
         if datetime_valid(data["time"]) == False:
             return "Check the timestamp format"
         else:
-            return calculate_delivery_fee(data)
+            response = calculate_delivery_fee(data)
+            return jsonify(response)
 
 if __name__ == "__main__":
     app.run(debug=True)
